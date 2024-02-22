@@ -74,11 +74,14 @@ describe("Create a system account", async () => {
             data: addressDataBuffer,
         });
 
-        await sendAndConfirmTransaction(
+        let data = await sendAndConfirmTransaction(
             connection, 
             new Transaction().add(ix),
             [payer, newKeypair]
         );
+
+        let tx = await connection.getParsedTransaction(data);
+        console.log(tx);
     });
   });
   

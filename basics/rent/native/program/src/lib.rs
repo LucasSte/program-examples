@@ -17,33 +17,12 @@ fn process_instruction(
     accounts: &[AccountInfo],
     instruction_data: &[u8],
 ) -> ProgramResult {
-    let accounts_iter = &mut accounts.iter();
-    let payer = next_account_info(accounts_iter)?;
-    let new_account = next_account_info(accounts_iter)?;
-    let system_program = next_account_info(accounts_iter)?;
 
-    msg!("Program invoked. Creating a system account...");
-    msg!("  New public key will be: {}", &new_account.key.to_string());
+    let n1 = u32::from_be_bytes(instruction_data[0..4].try_into().unwrap());
+    let n2 = u32::from_be_bytes(instruction_data[4..8].try_into().unwrap());
+    let v1 = n1 % 7777;
+    let v2 = n2 % n1;
+    msg!("n1: {}, n2: {}, v1: {}, v2: {}", n1, n2, v1, v2);
 
-    // Determine the necessary minimum rent by calculating the account's size
-    //
-    let account_span = instruction_data.len();
-    let lamports_required = (Rent::get()?).minimum_balance(account_span);
-
-    msg!("Account span: {}", &account_span);
-    msg!("Lamports required: {}", &lamports_required);
-
-    invoke(
-        &system_instruction::create_account(
-            payer.key,
-            new_account.key,
-            lamports_required,
-            account_span as u64,
-            &system_program::ID,
-        ),
-        &[payer.clone(), new_account.clone(), system_program.clone()],
-    )?;
-
-    msg!("Account created succesfully.");
     Ok(())
 }
