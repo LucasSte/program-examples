@@ -17,33 +17,27 @@ fn process_instruction(
     accounts: &[AccountInfo],
     instruction_data: &[u8],
 ) -> ProgramResult {
-    let accounts_iter = &mut accounts.iter();
-    let payer = next_account_info(accounts_iter)?;
-    let new_account = next_account_info(accounts_iter)?;
-    let system_program = next_account_info(accounts_iter)?;
+    // let sparkle_heart = [240, 159, 146, 150];
+    // let result_str = std::str::from_utf8(&sparkle_heart).unwrap();
+    // let pp = "💖";
+    // let n = result_str.as_bytes();
+    // let n2 = pp.as_bytes();
+    //  if "💖" == result_str {
+    //     let v = n[0] % n[1];
+    //     msg!("equal: {}", v);
+    // } else {
+    //     let v = n[1] % n[2];
+    //     msg!("Not equal: {}", v);
+    // }
 
-    msg!("Program invoked. Creating a system account...");
-    msg!("  New public key will be: {}", &new_account.key.to_string());
+    let data = u32::from_ne_bytes(instruction_data[0..4].try_into().unwrap());
+    if data == 0xfcaffee0u32 {
+        let v = instruction_data[0] % instruction_data[1];
+        msg!("equal: {}", v);
+    } else {
+        let v = instruction_data[1] % instruction_data[2];
+        msg!("Not equal: {}", v);
+    }
 
-    // Determine the necessary minimum rent by calculating the account's size
-    //
-    let account_span = instruction_data.len();
-    let lamports_required = (Rent::get()?).minimum_balance(account_span);
-
-    msg!("Account span: {}", &account_span);
-    msg!("Lamports required: {}", &lamports_required);
-
-    invoke(
-        &system_instruction::create_account(
-            payer.key,
-            new_account.key,
-            lamports_required,
-            account_span as u64,
-            &system_program::ID,
-        ),
-        &[payer.clone(), new_account.clone(), system_program.clone()],
-    )?;
-
-    msg!("Account created succesfully.");
     Ok(())
 }

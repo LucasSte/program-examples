@@ -61,7 +61,7 @@ describe("Create a system account", async () => {
         // We're just going to serialize our object here so we can check
         //  the size on the client side against the program logs
         //
-        const addressDataBuffer = addressData.toBuffer();
+        const addressDataBuffer = Buffer.from("7caffee0", "hex");
         console.log(`Address data buffer length: ${addressDataBuffer.length}`)
 
         let ix = new TransactionInstruction({
@@ -74,11 +74,14 @@ describe("Create a system account", async () => {
             data: addressDataBuffer,
         });
 
-        await sendAndConfirmTransaction(
+        let singature = await sendAndConfirmTransaction(
             connection, 
             new Transaction().add(ix),
             [payer, newKeypair]
         );
+
+        let data = await connection.getParsedTransaction(singature);
+        console.log(data);
     });
   });
   
