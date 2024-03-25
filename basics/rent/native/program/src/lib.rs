@@ -44,17 +44,21 @@ pub fn entry(program_id: &Pubkey, accounts: &[AccountInfo], data: &[u8])
 
     msg!("{:?}", x);
 
+    // Optimized away. Read from data.
     let x_i128 : u128 = u128::MAX - 2;
     let y_i128 = test_i128(x_i128);
     assert_eq!(y_i128, u128::MAX);
     
-
+    // Optimized away. Read from data.
     let x_256 = Testing {a: u128::MAX - 2, b: u128::MAX - 3};
     let y_256 = modify_256(x_256);
 
+    // These two functions are optimized away. To avoid that, 
+    // Read the i64 from data.
     let res = many_args(51, -89, 85, -777, 500, 35, 100, 45);
     assert_eq!(res, -1420);
     
+    // Optimized away. Read from data.
     let res = many_args_stack_space(51, -89, 85, -777, 500, 35, 100, 45);
     assert_eq!(res, -1420);
 
