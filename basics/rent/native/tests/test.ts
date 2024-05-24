@@ -6,7 +6,8 @@ import {
     Transaction,
     TransactionInstruction,
 } from '@solana/web3.js';
-import * as borsh from "borsh";
+import { BN } from 'bn.js';
+import expect from 'expect';
 import { Buffer } from "buffer";
 
 
@@ -17,68 +18,55 @@ function createKeypairFromFile(path: string): Keypair {
 };
 
 
+function getRandomInt() {
+    const max = 255;
+    let list = [];
+    for (let i=0; i<8; i++) {
+        list.push(Math.floor(Math.random() * max));
+    }
+    return new BN(Buffer.from(list));
+};
+
 describe("Create a system account", async () => {
 
     const connection = new Connection(`http://localhost:8899`, 'confirmed');
     const payer = createKeypairFromFile(require('os').homedir() + '/.config/solana/id.json');
     const program = createKeypairFromFile('./program/target/so/program-keypair.json');
 
-    class Assignable {
-        constructor(properties) {
-            Object.keys(properties).map((key) => {
-                return (this[key] = properties[key]);
-            });
-        };
-    };
-    
-    class AddressData extends Assignable {
-        toBuffer() {
-            return Buffer.from(borsh.serialize(AddressDataSchema, this));
-        }
-    };
-    
-    const AddressDataSchema = new Map([
-        [
-            AddressData, {
-                kind: 'struct',
-                fields: [
-                    ['name', 'string'],
-                    ['address', 'string'],
-                ]
-            }
-        ]
-    ]);
   
     it("Create the account", async () => {
 
-        const newKeypair = Keypair.generate();
-
-        const addressData = new AddressData({
-            name: "Marcus",
-            address: "123 Main St. San Francisco, CA"
-        });
-
-        // We're just going to serialize our object here so we can check
-        //  the size on the client side against the program logs
-        //
-        const addressDataBuffer = addressData.toBuffer();
-        console.log(`Address data buffer length: ${addressDataBuffer.length}`)
-
-        let ix = new TransactionInstruction({
-            keys: [
-                {pubkey: payer.publicKey, isSigner: true, isWritable: true},
-                {pubkey: newKeypair.publicKey, isSigner: true, isWritable: true},
-                {pubkey: SystemProgram.programId, isSigner: false, isWritable: false}
-            ],
-            programId: program.publicKey,
-            data: addressDataBuffer,
-        });
-
-        await sendAndConfirmTransaction(
-            connection, 
-            new Transaction().add(ix),
-            [payer, newKeypair]
-        );
+        for(let i=0; i<1000000000; i++) {
+            const a = getRandomInt();
+            const b = getRandomInt();
+    
+            const buffers = [a.toBuffer("le", 8), b.toBuffer("le", 8)];
+            const program_data = Buffer.concat(buffers);
+            
+            const c = a.mod(b);
+            const c_buf = c.toBuffer("le", 8);
+    
+            let ix = new TransactionInstruction({
+                keys: [
+                    {pubkey: payer.publicKey, isSigner: true, isWritable: true},
+                    {pubkey: SystemProgram.programId, isSigner: false, isWritable: false}
+                ],
+                programId: program.publicKey,
+                data: program_data,
+            });
+    
+            const signature = await sendAndConfirmTransaction(
+                connection, 
+                new Transaction().add(ix),
+                [payer]
+            );
+    
+            let transaction = await connection.getTransaction(signature, {commitment: "confirmed"});
+    
+            const res = Buffer.from(transaction?.meta?.returnData.data[0], 'base64');
+    
+            expect(res).toEqual(c_buf);  
+        }      
     });
   });
   
